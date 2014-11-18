@@ -72,7 +72,7 @@ ruleA1 phi cs (DConApp fv dts) = let cs' = addFlatConName cs -- create a new con
 --                                                              in (cs', (DFunApp "(++)" [ft, dt']))
 --                                          cs' = addFlatConName cs
 --                                          newFlatConApp  = DConApp (head cs') (toDFreeVarApps phi)
---                                      in foldl f (cs', newFlatConApp) dts
+--                                  in foldl f (cs', newFlatConApp) dts
 
 ruleA1 phi cs (DLambda fv dt) = ruleA1 phi cs dt
 
