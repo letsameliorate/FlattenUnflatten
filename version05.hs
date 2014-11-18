@@ -128,7 +128,7 @@ applyRuleA2ForArguments cs ft (dt:dts) = let (cs', dt') = ruleA2 cs dt
 addFlatConName :: [ConName] -> [ConName]
 addFlatConName [] = ["flatCon"]
 addFlatConName cs = addFlatConName' cs (head cs)
-addFlatConName' cs c = if c `elem` cs 
+addFlatConName' cs c = if c `elem` cs
                        then addFlatConName' cs (c ++ "'")
                        else (c : cs)
 
