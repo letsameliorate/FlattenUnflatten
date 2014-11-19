@@ -194,6 +194,16 @@ abstract' i fv dt@(DWhere f1 dts (f2, fvs, dt2)) = dt
 
 
 {-|
-
+    Function to get the free variables in dt.
 |-}
-free = \dt -> []
+free :: DTerm -> [DTerm]
+free dt = free' [] dt
+
+free' :: [DTerm] -> DTerm -> [DTerm]
+free' xs (DFreeVarApp fv dts) = xs
+free' xs (DBoundVarApp i dts) = xs
+free' xs (DConApp c dts) = xs
+free' xs (DFunApp f dts) = xs
+free' xs (DLet fv dt1 dt2) = xs
+free' xs (DCase csel bs) = xs
+free' xs (DWhere f1 dts (f2, fvs, dt2)) = xs
