@@ -39,7 +39,7 @@ data DataType = DataType TypeName [TypeVar] [(TypeCon, [TypeComp])] -- Data Type
     Generates the definition for flatten and the new constructors for the Flat Data Type.
 |-}
 generateFlatten :: DTerm -> ([ConName], DTerm)
-generateFlatten dt = ruleA1 [] [] dt
+generateFlatten dt = ruleA1 [] [] [] dt
 
 
 {-|
