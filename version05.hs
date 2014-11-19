@@ -126,7 +126,7 @@ applyRuleA1ForBranches phi cs fvs1 ((c, fvs2, dt) : bs) bs' = let phi' = phi
     Function to sequentially apply function ruleA2.
     Used for the arguments of variable and constructor applications.
 |-}
-applyRuleA2ForArguments :: [ConName] -> DTerm -> [FreeVar] -> [DTerm] -> ([ConName], DTerm)
+applyRuleA2ForArguments :: [ConName] -> [FreeVar] -> DTerm -> [DTerm] -> ([ConName], DTerm)
 applyRuleA2ForArguments cs fvs ft [] = (cs, ft)
 applyRuleA2ForArguments cs fvs ft (dt:dts) = let (cs', dt') = ruleA2 cs fvs dt
                                              in applyRuleA2ForArguments cs' fvs (DFunApp "(++)" [ft, dt']) dts
