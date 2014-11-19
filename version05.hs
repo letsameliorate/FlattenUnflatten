@@ -83,7 +83,7 @@ ruleA1 phi cs fvs (DFunApp f dts) = let cs' = addFlatConName cs -- create a new 
 
 ruleA1 phi cs fvs (DLet fv dt0 dt1) = ruleA1 phi cs fvs (subst dt0 dt1)
 
-ruleA1 phi cs fvs (DCase csel bs) = let (cs', bs') = applyRuleA1ForBranch phi cs bs []
+ruleA1 phi cs fvs (DCase csel bs) = let (cs', bs') = applyRuleA1ForBranch phi cs fvs bs []
                                     in (cs', (DCase csel bs'))
 
 ruleA1 phi cs fvs1 (DWhere f1 dts (f2, fvs2, dt)) = let fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv' : fvs) fvs1 fvs2
@@ -96,25 +96,27 @@ ruleA1 phi cs fvs1 (DWhere f1 dts (f2, fvs2, dt)) = let fvs1' = foldr (\fv fvs -
 {-|
     Definition for transformation rule A2.
 |-}
-ruleA2 :: [ConName] -> DTerm -> ([ConName], DTerm)
-ruleA2 cs (DFreeVarApp fv dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
-ruleA2 cs (DBoundVarApp i dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
-ruleA2 cs (DConApp c dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
-ruleA2 cs (DLambda fv dt) = ruleA2 cs dt
-ruleA2 cs (DFunApp f dts) = (cs, (DFunApp ("flatten_" ++ f) (concatMap free dts)))
-ruleA2 cs (DLet fv dt0 dt1) = ruleA2 cs (subst dt0 dt1)
-ruleA2 cs dt = ruleA1 [] cs dt
+ruleA2 :: [ConName] -> [FreeVar] -> DTerm -> ([ConName], DTerm)
+ruleA2 cs fvs (DFreeVarApp fv dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
+ruleA2 cs fvs (DBoundVarApp i dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
+ruleA2 cs fvs (DConApp c dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
+ruleA2 cs fvs (DLambda fv dt) = let fv' = rename fvs fv
+                                    (cs', dt') = ruleA2 cs (fv' : fvs) (subst (DFreeVarApp fv []) dt)
+                                in (cs', (abstract fv' dt'))
+ruleA2 cs fvs (DFunApp f dts) = (cs, (DFunApp ("flatten_" ++ f) (concatMap free dts)))
+ruleA2 cs fvs (DLet fv dt0 dt1) = ruleA2 cs fvs (subst dt0 dt1)
+ruleA2 cs fvs dt = ruleA1 [] cs fvs dt
 
 
 {-|
     Function to sequentally apply function ruleA1.
     Used for the branch expressions in case expressions.
 |-}
-applyRuleA1ForBranch :: [FreeVar] -> [ConName] -> [Branch] -> [Branch] -> ([ConName], [Branch])
-applyRuleA1ForBranch phi cs [] bs' = (cs, bs')
-applyRuleA1ForBranch phi cs ((c, fvs, dt) : bs) bs' = let phi' = phi
-                                                          (cs', dt') = ruleA1 phi' cs dt
-                                                      in applyRuleA1ForBranch phi cs' bs (bs' ++ [(c, fvs, dt')])
+applyRuleA1ForBranch :: [FreeVar] -> [ConName] -> [FreeVar] -> [Branch] -> [Branch] -> ([ConName], [Branch])
+applyRuleA1ForBranch phi cs fvs [] bs' = (cs, bs')
+applyRuleA1ForBranch phi cs fvs1 ((c, fvs2, dt) : bs) bs' = let phi' = phi
+                                                                (cs', dt') = ruleA1 phi' cs dt
+                                                            in applyRuleA1ForBranch phi cs' fvs1 bs (bs' ++ [(c, fvs2, dt')])
 
 
 {-|
