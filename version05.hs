@@ -133,7 +133,7 @@ applyRuleA2ForArguments cs fvs ft (dt:dts) = let (cs', dt') = ruleA2 cs fvs dt
 
 
 {-|
-    Function to add a new constructor for the flat data type.
+    Function to add a new constructor name for the flat data type.
 |-}
 addFlatConName :: [ConName] -> [ConName]
 addFlatConName [] = ["flatCon"]
