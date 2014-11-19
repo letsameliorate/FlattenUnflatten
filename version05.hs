@@ -148,11 +148,12 @@ addFlatConName' cs c = if c `elem` cs
     Used for the non-inductive components that are arguments to a new constructor for the flat data type.
 |-}
 toDFreeVarApps :: [FreeVar] -> [DTerm]
-toDFreeVarApps vs = map (\v -> (DFreeVarApp v [])) vs
+toDFreeVarApps fvs = map (\fv -> (DFreeVarApp fv [])) fvs
 
 
 {-|
-
+    Function to create a fresh free variable not in fvs.
+    fv = seed, fvs = list of free variables.
 |-}
 rename :: [FreeVar] -> FreeVar -> FreeVar
 rename fvs fv = if fv `elem` fvs
@@ -161,7 +162,7 @@ rename fvs fv = if fv `elem` fvs
 
 
 {-|
-
+    Function to substitute dt0 in dt1.
 |-}
 subst :: DTerm -> DTerm -> DTerm
 subst dt0 dt1 = subst' 0 dt0 dt1
@@ -177,7 +178,7 @@ subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = dt0
 
 
 {-|
-
+    Function to abstract the free variable fv in dt with its De Bruijn index.
 |-}
 abstract :: FreeVar -> DTerm -> DTerm
 abstract fv dt = abstract' 0 fv dt
