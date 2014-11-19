@@ -151,5 +151,14 @@ toDFreeVarApps :: [FreeVar] -> [DTerm]
 toDFreeVarApps vs = map (\v -> (DFreeVarApp v [])) vs
 
 
+{-|
+
+|-}
+rename :: [FreeVar] -> FreeVar -> FreeVar
+rename fvs fv = if fv `elem` fvs
+                then rename fvs (fv ++ "'")
+                else fv
+
+
 subst dt0 dt1 = dt1
 free = \dt -> []
