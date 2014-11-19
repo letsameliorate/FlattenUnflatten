@@ -97,9 +97,9 @@ ruleA1 phi cs fvs1 (DWhere f1 dts (f2, fvs2, dt)) = let fvs1' = foldr (\fv fvs -
     Definition for transformation rule A2.
 |-}
 ruleA2 :: [ConName] -> [FreeVar] -> DTerm -> ([ConName], DTerm)
-ruleA2 cs fvs (DFreeVarApp fv dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
-ruleA2 cs fvs (DBoundVarApp i dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
-ruleA2 cs fvs (DConApp c dts) = applyRuleA2ForArguments cs (DConApp "[]" []) dts
+ruleA2 cs fvs (DFreeVarApp fv dts) = applyRuleA2ForArguments cs fvs (DConApp "[]" []) dts
+ruleA2 cs fvs (DBoundVarApp i dts) = applyRuleA2ForArguments cs fvs (DConApp "[]" []) dts
+ruleA2 cs fvs (DConApp c dts) = applyRuleA2ForArguments cs fvs (DConApp "[]" []) dts
 ruleA2 cs fvs (DLambda fv dt) = let fv' = rename fvs fv
                                     (cs', dt') = ruleA2 cs (fv' : fvs) (subst (DFreeVarApp fv []) dt)
                                 in (cs', (abstract fv' dt'))
@@ -160,5 +160,35 @@ rename fvs fv = if fv `elem` fvs
                 else fv
 
 
-subst dt0 dt1 = dt1
+{-|
+
+|-}
+subst dt0 dt1 = subst' 0 dt0 dt1
+
+subst' i dt0 (DFreeVarApp fv dts) = dt0
+subst' i dt0 (DBoundVarApp j dts) = dt0
+subst' i dt0 (DConApp c dts) = dt0
+subst' i dt0 (DFunApp f dts) = dt0
+subst' i dt0 (DLet fv dt1 dt2) = dt0
+subst' i dt0 (DCase csel bs) = dt0
+subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = dt0
+
+
+{-|
+
+|-}
+abstract fv dt = abstract' 0 fv dt
+
+abstract' i fv (DFreeVarApp fv1 dts) = fv
+abstract' i fv (DBoundVarApp j dts) = fv
+abstract' i fv (DConApp c dts) = fv
+abstract' i fv (DFunApp f dts) = fv
+abstract' i fv (DLet fv1 dt1 dt2) = fv
+abstract' i fv (DCase csel bs) = fv
+abstract' i fv (DWhere f1 dts (f2, fvs, dt)) = fv
+
+
+{-|
+
+|-}
 free = \dt -> []
