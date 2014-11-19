@@ -81,13 +81,16 @@ ruleA1 phi cs fvs (DLambda fv dt) = let fv' = rename fvs fv
 ruleA1 phi cs fvs (DFunApp f dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
                                     in (cs', DFunApp "(++)" [(DConApp (head cs') (toDFreeVarApps phi)) , (DFunApp ("flatten_" ++ f) (concatMap free dts))])
 
-ruleA1 phi cs fvs (DLet fv dt0 dt1) = ruleA1 phi cs (subst dt0 dt1)
+ruleA1 phi cs fvs (DLet fv dt0 dt1) = ruleA1 phi cs fvs (subst dt0 dt1)
 
 ruleA1 phi cs fvs (DCase csel bs) = let (cs', bs') = applyRuleA1ForBranch phi cs bs []
                                     in (cs', (DCase csel bs'))
 
-ruleA1 phi cs fvs (DWhere f1 dts (f2, fvs, dt)) = let (cs', dt') = ruleA1 [] cs dt
-                                                  in (cs', (DWhere ("flatten_" ++ f1) dts (("flatten_" ++ f2), fvs, dt')))
+ruleA1 phi cs fvs1 (DWhere f1 dts (f2, fvs2, dt)) = let fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv' : fvs) fvs1 fvs2
+                                                        fvs2' = take (length fvs2) fvs1'
+                                                        (cs', dt') = ruleA1 phi cs fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2')
+                                                        dt'' = foldl (\dt fv -> abstract fv dt) dt' fvs2'
+                                                    in (cs', (DWhere ("flatten_" ++ f1) dts (("flatten_" ++ f2), fvs2, dt'')))
 
 
 {-|
