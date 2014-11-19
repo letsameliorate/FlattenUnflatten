@@ -163,8 +163,10 @@ rename fvs fv = if fv `elem` fvs
 {-|
 
 |-}
+subst :: DTerm -> DTerm -> DTerm
 subst dt0 dt1 = subst' 0 dt0 dt1
 
+subst' :: Int -> DTerm -> DTerm -> DTerm
 subst' i dt0 (DFreeVarApp fv dts) = dt0
 subst' i dt0 (DBoundVarApp j dts) = dt0
 subst' i dt0 (DConApp c dts) = dt0
@@ -177,15 +179,17 @@ subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = dt0
 {-|
 
 |-}
+abstract :: FreeVar -> DTerm -> DTerm
 abstract fv dt = abstract' 0 fv dt
 
-abstract' i fv (DFreeVarApp fv1 dts) = fv
-abstract' i fv (DBoundVarApp j dts) = fv
-abstract' i fv (DConApp c dts) = fv
-abstract' i fv (DFunApp f dts) = fv
-abstract' i fv (DLet fv1 dt1 dt2) = fv
-abstract' i fv (DCase csel bs) = fv
-abstract' i fv (DWhere f1 dts (f2, fvs, dt)) = fv
+abstract' :: Int -> FreeVar -> DTerm -> DTerm
+abstract' i fv dt@(DFreeVarApp fv1 dts) = dt
+abstract' i fv dt@(DBoundVarApp j dts) = dt
+abstract' i fv dt@(DConApp c dts) = dt
+abstract' i fv dt@(DFunApp f dts) = dt
+abstract' i fv dt@(DLet fv1 dt1 dt2) = dt
+abstract' i fv dt@(DCase csel bs) = dt
+abstract' i fv dt@(DWhere f1 dts (f2, fvs, dt2)) = dt
 
 
 {-|
