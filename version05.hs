@@ -50,29 +50,11 @@ ruleA1 :: [FreeVar] -> [ConName] -> [FreeVar] -> DTerm -> ([ConName], DTerm)
 ruleA1 phi cs fvs (DFreeVarApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
                                          in applyRuleA2ForArguments cs' fvs (DConApp (head cs') (toDFreeVarApps phi)) dts
 
--- ruleA1 phi cs (DFreeVarApp fv dts) = let f = \(cs, ft) dt -> let (cs', dt') = ruleA2 cs dt
---                                                              in (cs', (DFunApp "(++)" [ft, dt']))
---                                          cs' = addFlatConName cs
---                                          newFlatConApp  = DConApp (head cs') (toDFreeVarApps phi)
---                                      in foldl f (cs', newFlatConApp) dts
-
 ruleA1 phi cs fvs (DBoundVarApp i dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
                                          in applyRuleA2ForArguments cs' fvs (DConApp (head cs') (toDFreeVarApps phi)) dts
 
--- ruleA1 phi cs (DBoundVarApp i dts) = let f = \(cs, ft) dt -> let (cs', dt') = ruleA2 cs dt
---                                                              in (cs', (DFunApp "(++)" [ft, dt']))
---                                          cs' = addFlatConName cs
---                                          newFlatConApp  = DConApp (head cs') (toDFreeVarApps phi)
---                                      in foldl f (cs', newFlatConApp) dts
-
 ruleA1 phi cs fvs (DConApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
                                      in applyRuleA2ForArguments cs' fvs (DConApp (head cs') (toDFreeVarApps phi)) dts
-
--- ruleA1 phi cs (DConApp fv dts) = let f = \(cs, ft) dt -> let (cs', dt') = ruleA2 cs dt
---                                                              in (cs', (DFunApp "(++)" [ft, dt']))
---                                          cs' = addFlatConName cs
---                                          newFlatConApp  = DConApp (head cs') (toDFreeVarApps phi)
---                                  in foldl f (cs', newFlatConApp) dts
 
 ruleA1 phi cs fvs (DLambda fv dt) = let fv' = rename fvs fv
                                         (cs', dt') = ruleA1 phi cs (fv':fvs) (subst (DFreeVarApp fv []) dt)
