@@ -46,9 +46,9 @@ generateFlatten dt = ruleA1 [] [] dt
     Definition for transformation rule A1.
 |-}
 -- ruleA1 :: [Non-inductive Components] -> [New Flat Constructors] -> Flat Term -> ([New Flat Constructors], Flat Term)
-ruleA1 :: [FreeVar] -> [ConName] -> DTerm -> ([ConName], DTerm)
-ruleA1 phi cs (DFreeVarApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                     in applyRuleA2ForArguments cs' (DConApp (head cs') (toDFreeVarApps phi)) dts
+ruleA1 :: [FreeVar] -> [ConName] -> [FreeVar] -> DTerm -> ([ConName], DTerm)
+ruleA1 phi cs fvs (DFreeVarApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
+                                         in applyRuleA2ForArguments cs' (DConApp (head cs') (toDFreeVarApps phi)) dts
 
 -- ruleA1 phi cs (DFreeVarApp fv dts) = let f = \(cs, ft) dt -> let (cs', dt') = ruleA2 cs dt
 --                                                              in (cs', (DFunApp "(++)" [ft, dt']))
@@ -56,8 +56,8 @@ ruleA1 phi cs (DFreeVarApp fv dts) = let cs' = addFlatConName cs -- create a new
 --                                          newFlatConApp  = DConApp (head cs') (toDFreeVarApps phi)
 --                                      in foldl f (cs', newFlatConApp) dts
 
-ruleA1 phi cs (DBoundVarApp i dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                     in applyRuleA2ForArguments cs' (DConApp (head cs') (toDFreeVarApps phi)) dts
+ruleA1 phi cs fvs (DBoundVarApp i dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
+                                         in applyRuleA2ForArguments cs' (DConApp (head cs') (toDFreeVarApps phi)) dts
 
 -- ruleA1 phi cs (DBoundVarApp i dts) = let f = \(cs, ft) dt -> let (cs', dt') = ruleA2 cs dt
 --                                                              in (cs', (DFunApp "(++)" [ft, dt']))
@@ -65,8 +65,8 @@ ruleA1 phi cs (DBoundVarApp i dts) = let cs' = addFlatConName cs -- create a new
 --                                          newFlatConApp  = DConApp (head cs') (toDFreeVarApps phi)
 --                                      in foldl f (cs', newFlatConApp) dts
 
-ruleA1 phi cs (DConApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                 in applyRuleA2ForArguments cs' (DConApp (head cs') (toDFreeVarApps phi)) dts
+ruleA1 phi cs fvs (DConApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
+                                     in applyRuleA2ForArguments cs' (DConApp (head cs') (toDFreeVarApps phi)) dts
 
 -- ruleA1 phi cs (DConApp fv dts) = let f = \(cs, ft) dt -> let (cs', dt') = ruleA2 cs dt
 --                                                              in (cs', (DFunApp "(++)" [ft, dt']))
@@ -74,18 +74,20 @@ ruleA1 phi cs (DConApp fv dts) = let cs' = addFlatConName cs -- create a new con
 --                                          newFlatConApp  = DConApp (head cs') (toDFreeVarApps phi)
 --                                  in foldl f (cs', newFlatConApp) dts
 
-ruleA1 phi cs (DLambda fv dt) = ruleA1 phi cs dt
+ruleA1 phi cs fvs (DLambda fv dt) = let fv' = rename fvs fv
+                                        (cs', dt') = ruleA1 phi cs (fv' : fvs) (subst (DFreeVarApp fv []) dt)
+                                    in (cs', (abstract fv' dt'))
 
-ruleA1 phi cs (DFunApp f dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                in (cs', DFunApp "(++)" [(DConApp (head cs') (toDFreeVarApps phi)) , (DFunApp ("flatten_" ++ f) (concatMap free dts))])
+ruleA1 phi cs fvs (DFunApp f dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
+                                    in (cs', DFunApp "(++)" [(DConApp (head cs') (toDFreeVarApps phi)) , (DFunApp ("flatten_" ++ f) (concatMap free dts))])
 
-ruleA1 phi cs (DLet fv dt0 dt1) = ruleA1 phi cs (subst dt0 dt1)
+ruleA1 phi cs fvs (DLet fv dt0 dt1) = ruleA1 phi cs (subst dt0 dt1)
 
-ruleA1 phi cs (DCase csel bs) = let (cs', bs') = applyRuleA1ForBranch phi cs bs []
-                                in (cs', (DCase csel bs'))
+ruleA1 phi cs fvs (DCase csel bs) = let (cs', bs') = applyRuleA1ForBranch phi cs bs []
+                                    in (cs', (DCase csel bs'))
 
-ruleA1 phi cs (DWhere f1 dts (f2, fvs, dt)) = let (cs', dt') = ruleA1 [] cs dt
-                                              in (cs', (DWhere ("flatten_" ++ f1) dts (("flatten_" ++ f2), fvs, dt')))
+ruleA1 phi cs fvs (DWhere f1 dts (f2, fvs, dt)) = let (cs', dt') = ruleA1 [] cs dt
+                                                  in (cs', (DWhere ("flatten_" ++ f1) dts (("flatten_" ++ f2), fvs, dt')))
 
 
 {-|
