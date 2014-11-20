@@ -64,7 +64,7 @@ ruleA1 gamma phi cs fvs (DLambda fv dt) = let fv' = rename fvs fv
                                           in (cs', DLambda fv (abstract fv' dt'))
 
 ruleA1 gamma phi cs fvs (DFunApp f dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                          in (cs', DFunApp "(++)" [(DConApp (head cs') (toDFreeVarApps phi)) , (DFunApp ("flatten_" ++ f) (concatMap free dts))])
+                                          in (cs', DFunApp "(++)" [(DConApp (head cs') (toDFreeVarApps phi)) , (DFunApp ("flatten_" ++ f) (toDFreeVarApps (concatMap free dts)))])
 
 ruleA1 gamma phi cs fvs (DLet fv dt0 dt1) = ruleA1 gamma phi cs fvs (subst dt0 dt1)
 
@@ -88,7 +88,7 @@ ruleA2 gamma cs fvs (DConApp c dts) = applyRuleA2ForArguments gamma cs fvs (DCon
 ruleA2 gamma cs fvs (DLambda fv dt) = let fv' = rename fvs fv
                                           (cs', dt') = ruleA2 gamma cs (fv' : fvs) (subst (DFreeVarApp fv []) dt)
                                       in (cs', DLambda fv (abstract fv' dt'))
-ruleA2 gamma cs fvs (DFunApp f dts) = (cs, (DFunApp ("flatten_" ++ f) (concatMap free dts)))
+ruleA2 gamma cs fvs (DFunApp f dts) = (cs, (DFunApp ("flatten_" ++ f) (toDFreeVarApps (concatMap free dts))))
 ruleA2 gamma cs fvs (DLet fv dt0 dt1) = ruleA2 gamma cs fvs (subst dt0 dt1)
 ruleA2 gamma cs fvs dt = ruleA1 gamma [] cs fvs dt
 
@@ -163,6 +163,13 @@ subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = dt0
 
 
 {-|
+    Function to shift De Bruijn index for substitution.
+|-}
+shift :: Int -> Int -> DTerm -> DTerm
+shift 0 d dt = dt
+
+
+{-|
     Function to abstract the free variable fv in dt with its De Bruijn index.
 |-}
 abstract :: FreeVar -> DTerm -> DTerm
@@ -181,17 +188,17 @@ abstract' i fv dt@(DWhere f1 dts (f2, fvs, dt2)) = dt
 {-|
     Function to get the free variables in dt.
 |-}
-free :: DTerm -> [DTerm]
+free :: DTerm -> [FreeVar]
 free dt = free' [] dt
 
-free' :: [DTerm] -> DTerm -> [DTerm]
-free' xs (DFreeVarApp fv dts) = xs
-free' xs (DBoundVarApp i dts) = xs
-free' xs (DConApp c dts) = xs
-free' xs (DFunApp f dts) = xs
-free' xs (DLet fv dt1 dt2) = xs
-free' xs (DCase csel bs) = xs
-free' xs (DWhere f1 dts (f2, fvs, dt2)) = xs
+free' :: [FreeVar] -> DTerm -> [FreeVar]
+free' xs (DFreeVarApp fv dts) = foldr (\dt xs -> free' xs dt) (if fv `elem` xs then xs else fv:xs) dts
+free' xs (DBoundVarApp i dts) = foldr (\dt xs -> free' xs dt) xs dts
+free' xs (DConApp c dts) = foldr (\dt xs -> free' xs dt) xs dts
+free' xs (DFunApp f dts) = foldr (\dt xs -> free' xs dt) xs dts
+free' xs (DLet fv dt1 dt2) = free' (free' xs dt1) dt2
+free' xs (DCase (fv, dts) bs) = foldr (\(c, fvs, dt) xs -> free' xs dt) (free' xs (DFreeVarApp fv dts)) bs
+free' xs (DWhere f1 dts (f2, fvs, dt2)) = free' (free' xs (DFunApp f1 dts)) dt2
 
 
 {-|
