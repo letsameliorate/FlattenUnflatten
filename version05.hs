@@ -153,10 +153,11 @@ subst :: DTerm -> DTerm -> DTerm
 subst dt0 dt1 = subst' 0 dt0 dt1
 
 subst' :: Int -> DTerm -> DTerm -> DTerm
-subst' i dt0 (DFreeVarApp fv dts) = dt0
+subst' i dt0 (DFreeVarApp fv dts) = DFreeVarApp fv (map (subst' i dt0) dts)
 subst' i dt0 (DBoundVarApp j dts) = dt0
-subst' i dt0 (DConApp c dts) = dt0
-subst' i dt0 (DFunApp f dts) = dt0
+subst' i dt0 (DConApp c dts) = DConApp c (map (subst' i dt0) dts)
+subst' i dt0 (DLambda fv dt) = DLambda fv (subst' (i+1) dt0 dt)
+subst' i dt0 (DFunApp f dts) = DFunApp f (map (subst' i dt0) dts)
 subst' i dt0 (DLet fv dt1 dt2) = dt0
 subst' i dt0 (DCase csel bs) = dt0
 subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = dt0
@@ -195,6 +196,7 @@ free' :: [FreeVar] -> DTerm -> [FreeVar]
 free' xs (DFreeVarApp fv dts) = foldr (\dt xs -> free' xs dt) (if fv `elem` xs then xs else fv:xs) dts
 free' xs (DBoundVarApp i dts) = foldr (\dt xs -> free' xs dt) xs dts
 free' xs (DConApp c dts) = foldr (\dt xs -> free' xs dt) xs dts
+free' xs (DLambda fv dt) = free' xs dt
 free' xs (DFunApp f dts) = foldr (\dt xs -> free' xs dt) xs dts
 free' xs (DLet fv dt1 dt2) = free' (free' xs dt1) dt2
 free' xs (DCase (fv, dts) bs) = foldr (\(c, fvs, dt) xs -> free' xs dt) (free' xs (DFreeVarApp fv dts)) bs
