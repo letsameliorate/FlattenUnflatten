@@ -97,7 +97,7 @@ ruleA2 cs fvs (DBoundVarApp i dts) = applyRuleA2ForArguments cs fvs (DConApp "[]
 ruleA2 cs fvs (DConApp c dts) = applyRuleA2ForArguments cs fvs (DConApp "[]" []) dts
 ruleA2 cs fvs (DLambda fv dt) = let fv' = rename fvs fv
                                     (cs', dt') = ruleA2 cs (fv' : fvs) (subst (DFreeVarApp fv []) dt)
-                                in (cs', (abstract fv' dt'))
+                                in (cs', DLambda fv (abstract fv' dt'))
 ruleA2 cs fvs (DFunApp f dts) = (cs, (DFunApp ("flatten_" ++ f) (concatMap free dts)))
 ruleA2 cs fvs (DLet fv dt0 dt1) = ruleA2 cs fvs (subst dt0 dt1)
 ruleA2 cs fvs dt = ruleA1 [] cs fvs dt
