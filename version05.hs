@@ -37,6 +37,7 @@ data DataType = DataType TypeName [TypeVar] [(TypeCon, [TypeComp])] -- Data Type
 instance Eq DataType where
     (==) (DataType tname1 _ _) (DataType tname2 _ _) = tname1 == tname2
 
+
 {-|
     Generates the definition for flatten and the new constructors for the Flat Data Type.
 |-}
