@@ -39,6 +39,7 @@ data DataType = DataType TypeName [TypeVar] [(TypeCon, [TypeComp])] -- Data Type
 
 filterNonInductiveBinders :: [DataType] -> (ConName, [FreeVar]) -> (Typename, [TypeVar], [(TypeCon, [TypeComp])]) -> [FreeVar]
 -- decide / fix gamma, FreeVars, arguments for notElem, and return type
+-- also decide if phi is indices or free vars
 filterNonInductiveBinders gamma (c, fvs) (tname, tvars, tcons) = let (tcon, tcomps) = filter (\(tcon, tcomps) -> tcon == c) tcons
                                                                      pairs = zip fvs tcomps
                                                                      fvs' = fst . unzip . filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs
@@ -70,7 +71,7 @@ ruleA1 phi cs fvs (DConApp fv dts) = let cs' = addFlatConName cs -- create a new
 
 ruleA1 phi cs fvs (DLambda fv dt) = let fv' = rename fvs fv
                                         (cs', dt') = ruleA1 phi cs (fv':fvs) (subst (DFreeVarApp fv []) dt)
-                                    in (cs', (abstract fv' dt'))
+                                    in (cs', DLambda fv (abstract fv' dt'))
 
 ruleA1 phi cs fvs (DFunApp f dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
                                     in (cs', DFunApp "(++)" [(DConApp (head cs') (toDFreeVarApps phi)) , (DFunApp ("flatten_" ++ f) (concatMap free dts))])
