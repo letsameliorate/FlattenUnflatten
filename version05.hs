@@ -36,7 +36,6 @@ data DataType = DataType TypeName [TypeVar] [(TypeCon, [TypeComp])] -- Data Type
 
 
 {-|
-
 filterNonInductiveBinders :: [DataType] -> (ConName, [FreeVar]) -> (Typename, [TypeVar], [(TypeCon, [TypeComp])]) -> [FreeVar]
 -- decide / fix gamma, FreeVars, arguments for notElem, and return type
 -- also decide if phi is indices or free vars
@@ -129,7 +128,7 @@ ruleA2 cs fvs dt = ruleA1 [] cs fvs dt
 |-}
 applyRuleA1ForBranches :: [FreeVar] -> [ConName] -> [FreeVar] -> [Branch] -> [Branch] -> ([ConName], [Branch])
 applyRuleA1ForBranches phi cs fvs [] bs' = (cs, bs')
-applyRuleA1ForBranches phi cs fvs1 ((c, fvs2, dt) : bs) bs' = let phi' = phi
+applyRuleA1ForBranches phi cs fvs1 ((c, fvs2, dt) : bs) bs' = let phi' = phi ++ (getNonInductiveBinders [] c fvs2)
                                                                   fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv':fvs) fvs1 fvs2
                                                                   fvs2' = take (length fvs2) fvs1'
                                                                   (cs', dt') = ruleA1 phi' cs fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2')
