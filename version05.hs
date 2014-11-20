@@ -200,9 +200,15 @@ filterNonInductiveBinders gamma (c, fvs) (tname, tvars, tcons) = let (tcon, tcom
                                                                      fvs' = fst . unzip . filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs
                                                                  in fvs'
 
+-- tcomps for c can never be [], because fvs is never empty for c is not [].
+-- => filter in typeComponents is never []. => head is never on [].
+-- but, c may have no non-inductive components.
+-- => filter on pairs can be [].
+-- but since (fst . unzip) [] = [], fst is safe.
 |-}
 -- getNonInductiveBinders :: [parallelisable data type instances] -> Constructor name from pattern -> [binders from pattern] -> [non-inductive binders from pattern]
 getNonInductiveBinders :: [DataType] -> ConName -> [FreeVar] -> [FreeVar]
+getNonInductiveBinders gamma c [] = []
 getNonInductiveBinders gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma --to get the list of type components for this constructor
                                          pairs = zip fvs tcomps -- pairs :: [(FreeVar, TypeComp)]
                                      in (fst . unzip) (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
