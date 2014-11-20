@@ -18,7 +18,7 @@ data DTerm = DFreeVarApp FreeVar [DTerm] -- Free Variable Application
            | DFunApp FunName [DTerm] -- Function Application
            | DLet FreeVar DTerm DTerm -- Let Expression
            | DCase CaseSel [Branch] -- Case Expression
---           | DWhere FunName [DTerm] [DTerm] -- Local Function Definition
+--           | DWhere FunName [DTerm] [(FunName, DTerm)] -- Local Function Definition
            | DWhere FunName [DTerm] FunDef -- Local Function Definition
   deriving (Show)
 
