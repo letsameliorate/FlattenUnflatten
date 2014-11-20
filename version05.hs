@@ -194,11 +194,11 @@ free' xs (DWhere f1 dts (f2, fvs, dt2)) = xs
 {-|
     Function to filter the non-inductive binders from a pattern.
 
--- tcomps for c can never be [], because fvs is never empty for c is not [].
--- => filter in typeComponents is never []. => head is never on [].
+-- getTypeComponents for c can never be [], because fvs for c is not [].
+-- => filter in getTypeComponents is never []. => head is never applied on [].
 -- but, c may have no non-inductive components.
 -- => filter on pairs can be [].
--- but since (fst . unzip) [] = [], fst is safe.
+-- but, since (fst . unzip) [] = [], fst is safe.
 |-}
 -- getNonInductiveBinders :: [parallelisable data type instances] -> Constructor name from pattern -> [binders from pattern] -> [non-inductive binders from pattern]
 getNonInductiveBinders :: [DataType] -> ConName -> [FreeVar] -> [FreeVar]
