@@ -147,34 +147,51 @@ rename fvs fv = if fv `elem` fvs
 
 
 {-|
-    Function to substitute dt0 in dt1.
+    TBD: Function to substitute dt0 in dt1.
 |-}
 subst :: DTerm -> DTerm -> DTerm
 subst dt0 dt1 = subst' 0 dt0 dt1
 
 subst' :: Int -> DTerm -> DTerm -> DTerm
 subst' i dt0 (DFreeVarApp fv dts) = DFreeVarApp fv (map (subst' i dt0) dts)
-subst' i dt0 (DBoundVarApp j dts) = dt0 -- TBD
+subst' i dt0 (DBoundVarApp j dts) = if (j < i)
+                                    then DBoundVarApp j (map (subst' i dt0) dts)
+                                    else if (j == i)
+                                         then shift i 0 dt0 -- TBD: what is the DTerm to be constructed here ??
+                                         else DBoundVarApp (j-1) (map (subst' (i-1) dt0) dts) -- TBD: (i-1) or (j-1) ??
 subst' i dt0 (DConApp c dts) = DConApp c (map (subst' i dt0) dts)
 subst' i dt0 (DLambda fv dt) = DLambda fv (subst' (i+1) dt0 dt)
 subst' i dt0 (DFunApp f dts) = DFunApp f (map (subst' i dt0) dts)
 subst' i dt0 (DLet fv dt1 dt2) = DLet fv (subst' i dt0 dt1) (subst' (i+1) dt0 dt2)
 subst' i dt0 (DCase (fv, dts) bs) = let (DFreeVarApp fv' dts') = subst' i dt0 (DFreeVarApp fv dts)
-                                        bs' = map (\(c, fvs, dt) -> (c, fvs, subst' (i + (length fvs)) dt0 dt)) bs
+                                        bs' = map (\(c, fvs, dt) -> (c, fvs, subst' (i+(length fvs)) dt0 dt)) bs
                                     in (DCase (fv', dts') bs')
 subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = let (DFunApp f1' dts') = subst' i dt0 (DFunApp f1 dts)
-                                             in (DWhere f1' dts' (f2, fvs, subst' i dt0 dt))
+                                             in (DWhere f1' dts' (f2, fvs, subst' (i+(length fvs)) dt0 dt)) -- TBD: verify (d+(length fvs))
 
 
 {-|
-    Function to shift De Bruijn index for substitution.
+    TBD: Function to shift De Bruijn index for substitution.
 |-}
 shift :: Int -> Int -> DTerm -> DTerm
 shift 0 d dt = dt
+shift i d (DFreeVarApp fv dts) = DFreeVarApp fv (map (shift i d) dts)
+shift i d (DBoundVarApp j dts) = if (j >= d)
+                                 then DBoundVarApp (j+i) (map (shift i (d+1)) dts) -- TBD: verify (d+1)
+                                 else DBoundVarApp j (map (shift i (d+1)) dts) -- TBD: verify (d+1)
+shift i d (DConApp c dts) = DConApp c (map (shift i d) dts)
+shift i d (DLambda fv dt) = DLambda fv (shift i (d+1) dt)
+shift i d (DFunApp f dts) = DFunApp f (map (shift i d) dts)
+shift i d (DLet fv dt0 dt1) = DLet fv (shift i d dt0) (shift i (d+1) dt1)
+shift i d (DCase (fv, dts) bs) = let (DFreeVarApp fv' dts') = shift i d (DFreeVarApp fv dts)
+                                     bs' = map (\(c, fvs, dt) -> (c, fvs, shift i (d+length fvs) dt)) bs
+                                 in (DCase (fv', dts') bs')
+shift i d (DWhere f1 dts (f2, fvs, dt)) = let (DFunApp f1' dts') = shift i d (DFunApp f1 dts)
+                                          in (DWhere f1' dts' (f2, fvs, shift i (d+(length fvs)) dt)) -- TBD: verify (d +(length fvs))
 
 
 {-|
-    Function to abstract the free variable fv in dt with its De Bruijn index.
+    TBD: Function to abstract the free variable fv in dt with its De Bruijn index.
 |-}
 abstract :: FreeVar -> DTerm -> DTerm
 abstract fv dt = abstract' 0 fv dt
@@ -183,6 +200,7 @@ abstract' :: Int -> FreeVar -> DTerm -> DTerm
 abstract' i fv dt@(DFreeVarApp fv1 dts) = dt
 abstract' i fv dt@(DBoundVarApp j dts) = dt
 abstract' i fv dt@(DConApp c dts) = dt
+abstract' i fv dt@(DLambda fv1 dt1) = dt
 abstract' i fv dt@(DFunApp f dts) = dt
 abstract' i fv dt@(DLet fv1 dt1 dt2) = dt
 abstract' i fv dt@(DCase csel bs) = dt
