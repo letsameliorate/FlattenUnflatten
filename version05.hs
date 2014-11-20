@@ -36,27 +36,6 @@ data DataType = DataType TypeName [TypeVar] [(TypeCon, [TypeComp])] -- Data Type
 
 
 {-|
-filterNonInductiveBinders :: [DataType] -> (ConName, [FreeVar]) -> (Typename, [TypeVar], [(TypeCon, [TypeComp])]) -> [FreeVar]
--- decide / fix gamma, FreeVars, arguments for notElem, and return type
--- also decide if phi is indices or free vars
-filterNonInductiveBinders gamma (c, fvs) (tname, tvars, tcons) = let (tcon, tcomps) = filter (\(tcon, tcomps) -> tcon == c) tcons
-                                                                     pairs = zip fvs tcomps
-                                                                     fvs' = fst . unzip . filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs
-                                                                 in fvs'
-
-|-}
--- getNonInductiveBinders :: [parallelisable data type instances] -> Constructor name from pattern -> [binders from pattern] -> [non-inductive binders from pattern]
-getNonInductiveBinders :: [DataType] -> ConName -> [FreeVar] -> [FreeVar]
-getNonInductiveBinders gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma --to get the list of type components for this constructor
-                                         pairs = zip fvs tcomps -- pairs :: [(FreeVar, TypeComp)]
-                                         nonInductiveBinders = (fst . unzip) (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
-                                     in nonInductiveBinders
-
-getTypeComponents :: ConName -> DataType -> [TypeComp]
-getTypeComponents c (DataType tname tvars tcontcomps) = (snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
-
-
-{-|
     Generates the definition for flatten and the new constructors for the Flat Data Type.
 |-}
 generateFlatten :: DTerm -> ([ConName], DTerm)
@@ -210,3 +189,25 @@ free' xs (DFunApp f dts) = xs
 free' xs (DLet fv dt1 dt2) = xs
 free' xs (DCase csel bs) = xs
 free' xs (DWhere f1 dts (f2, fvs, dt2)) = xs
+
+
+{-|
+filterNonInductiveBinders :: [DataType] -> (ConName, [FreeVar]) -> (Typename, [TypeVar], [(TypeCon, [TypeComp])]) -> [FreeVar]
+-- decide / fix gamma, FreeVars, arguments for notElem, and return type
+-- also decide if phi is indices or free vars
+filterNonInductiveBinders gamma (c, fvs) (tname, tvars, tcons) = let (tcon, tcomps) = filter (\(tcon, tcomps) -> tcon == c) tcons
+                                                                     pairs = zip fvs tcomps
+                                                                     fvs' = fst . unzip . filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs
+                                                                 in fvs'
+
+|-}
+-- getNonInductiveBinders :: [parallelisable data type instances] -> Constructor name from pattern -> [binders from pattern] -> [non-inductive binders from pattern]
+getNonInductiveBinders :: [DataType] -> ConName -> [FreeVar] -> [FreeVar]
+getNonInductiveBinders gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma --to get the list of type components for this constructor
+                                         pairs = zip fvs tcomps -- pairs :: [(FreeVar, TypeComp)]
+                                     in (fst . unzip) (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
+--                                         nonInductiveBinders = (fst . unzip) (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
+--                                     in nonInductiveBinders
+
+getTypeComponents :: ConName -> DataType -> [TypeComp]
+getTypeComponents c (DataType tname tvars tcontcomps) = (snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
