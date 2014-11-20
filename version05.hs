@@ -45,7 +45,7 @@ generateFlatten gamma dt = ruleA1 gamma [] [] [] dt
 {-|
     Definition for transformation rule A1.
 |-}
--- ruleA1 :: [Non-inductive Components] -> [New Flat Constructors] -> Flat Term -> ([New Flat Constructors], Flat Term)
+-- ruleA1 :: [Parallelisable Data Types] -> [Non-inductive Components] -> [New Flat Constructors] -> [Free Variables] -> Term to Transform -> ([New Flat Constructors], Flat Term)
 ruleA1 :: [DataType] -> [FreeVar] -> [ConName] -> [FreeVar] -> DTerm -> ([ConName], DTerm)
 ruleA1 gamma phi cs fvs (DFreeVarApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
                                                in applyRuleA2ForArguments gamma cs' fvs (DConApp (head cs') (toDFreeVarApps phi)) dts
@@ -111,7 +111,7 @@ applyRuleA1ForBranches gamma phi cs fvs1 ((c, fvs2, dt) : bs) bs' = let phi' = p
 applyRuleA2ForArguments :: [DataType] -> [ConName] -> [FreeVar] -> DTerm -> [DTerm] -> ([ConName], DTerm)
 applyRuleA2ForArguments gamma cs fvs ft [] = (cs, ft)
 applyRuleA2ForArguments gamma cs fvs ft (dt:dts) = let (cs', dt') = ruleA2 gamma cs fvs dt
-                                             in applyRuleA2ForArguments gamma cs' fvs (DFunApp "(++)" [ft, dt']) dts
+                                                   in applyRuleA2ForArguments gamma cs' fvs (DFunApp "(++)" [ft, dt']) dts
 
 
 {-|
