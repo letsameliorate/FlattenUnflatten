@@ -154,13 +154,16 @@ subst dt0 dt1 = subst' 0 dt0 dt1
 
 subst' :: Int -> DTerm -> DTerm -> DTerm
 subst' i dt0 (DFreeVarApp fv dts) = DFreeVarApp fv (map (subst' i dt0) dts)
-subst' i dt0 (DBoundVarApp j dts) = dt0
+subst' i dt0 (DBoundVarApp j dts) = dt0 -- TBD
 subst' i dt0 (DConApp c dts) = DConApp c (map (subst' i dt0) dts)
 subst' i dt0 (DLambda fv dt) = DLambda fv (subst' (i+1) dt0 dt)
 subst' i dt0 (DFunApp f dts) = DFunApp f (map (subst' i dt0) dts)
-subst' i dt0 (DLet fv dt1 dt2) = dt0
-subst' i dt0 (DCase csel bs) = dt0
-subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = dt0
+subst' i dt0 (DLet fv dt1 dt2) = DLet fv (subst' i dt0 dt1) (subst' (i+1) dt0 dt2)
+subst' i dt0 (DCase (fv, dts) bs) = let (DFreeVarApp fv' dts') = subst' i dt0 (DFreeVarApp fv dts)
+                                        bs' = map (\(c, fvs, dt) -> (c, fvs, subst' (i + (length fvs)) dt0 dt)) bs
+                                    in (DCase (fv', dts') bs')
+subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = let (DFunApp f1' dts') = subst' i dt0 (DFunApp f1 dts)
+                                             in (DWhere f1' dts' (f2, fvs, subst' i dt0 dt))
 
 
 {-|
