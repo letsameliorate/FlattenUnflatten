@@ -32,7 +32,7 @@ type TypeCon = ConName -- Type Constructor
 type TypeComp = DataType -- Type Component
 
 data DataType = DataType TypeName [TypeVar] [(TypeCon, [TypeComp])] -- Data Type
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 {-|
@@ -45,7 +45,27 @@ filterNonInductiveBinders gamma (c, fvs) (tname, tvars, tcons) = let (tcon, tcom
                                                                      fvs' = fst . unzip . filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs
                                                                  in fvs'
 
+getNonInductiveBinders :: [parallelisable data type instances] -> Constructor name from pattern -> [binders from pattern] -> [non-inductive binders from pattern]
+getNonInductiveBinders :: [DataType] -> ConName -> [FreeVar] -> [FreeVar]
+getNonInductiveBinders gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma --to get the list of type components for this constructor
+                                         pairs = zip fvs tcomps -- pairs :: [(FreeVar, TypeComp)]
+                                         nonInductiveBinders = (fst . unzip) (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
+                                     in nonInductiveBinders
+
+getTypeComponents :: ConName -> DataType -> [TypeComp]
+getTypeComponents c (DataType tname tvars tcontcomps) c = snd (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
 |-}
+-- getNonInductiveBinders :: [parallelisable data type instances] -> Constructor name from pattern -> [binders from pattern] -> [non-inductive binders from pattern]
+getNonInductiveBinders :: [DataType] -> ConName -> [FreeVar] -> [FreeVar]
+getNonInductiveBinders gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma --to get the list of type components for this constructor
+                                         pairs = zip fvs tcomps -- pairs :: [(FreeVar, TypeComp)]
+                                         nonInductiveBinders = (fst . unzip) (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
+                                     in nonInductiveBinders
+
+getTypeComponents :: ConName -> DataType -> [TypeComp]
+getTypeComponents c (DataType tname tvars tcontcomps) = (snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
+
+
 
 
 {-|
