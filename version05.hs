@@ -35,7 +35,7 @@ data DataType = DataType TypeName [TypeVar] [(TypeCon, [TypeComp])] -- Data Type
   deriving (Show)
 
 instance Eq DataType where
-    (==) (DataType tname1 _ _) (DataType tname2 _ _) = tname1 == tname2
+  (==) (DataType tname1 _ _) (DataType tname2 _ _) = tname1 == tname2
 
 
 {-|
