@@ -32,8 +32,10 @@ type TypeCon = ConName -- Type Constructor
 type TypeComp = DataType -- Type Component
 
 data DataType = DataType TypeName [TypeVar] [(TypeCon, [TypeComp])] -- Data Type
-  deriving (Show, Eq)
+  deriving (Show)
 
+instance Eq DataType where
+    (==) (DataType tname1 _ _) (DataType tname2 _ _) = tname1 == tname2
 
 {-|
     Generates the definition for flatten and the new constructors for the Flat Data Type.
