@@ -127,7 +127,7 @@ applyRuleA2ForArguments gamma ctcomps fvs ft (dt:dts) = let (ctcomps', dt') = ru
 newFlatConName :: [ConName] -> ConName
 newFlatConName [] = "flatCon"
 newFlatConName cs = newFlatConName' cs (head cs)
-newFlatConName' cs c = if c `elem` cs
+newFlatConName' cs c = if (c `elem` cs)
                        then newFlatConName' cs (c ++ "'")
                        else c
 
@@ -145,7 +145,7 @@ toDFreeVarApps fvs = map (\fv -> (DFreeVarApp fv [])) fvs
     fv = seed, fvs = list of free variables.
 |-}
 rename :: [FreeVar] -> FreeVar -> FreeVar
-rename fvs fv = if fv `elem` fvs
+rename fvs fv = if (fv `elem` fvs)
                 then rename fvs (fv ++ "'")
                 else fv
 
@@ -230,27 +230,16 @@ free' xs (DWhere f1 dts (f2, fvs, dt2)) = free' (free' xs (DFunApp f1 dts)) dt2
 
 {-|
     Function to filter the non-inductive binders from a pattern.
+    Returns ([non-inductive binder], [their type component])
 
 -- getTypeComponents for c can never be [], because fvs for c is not [].
 -- => filter in getTypeComponents is never []. => head is never applied on [].
--- but, c may have no non-inductive components.
--- => filter on pairs can be [].
--- but, since (fst . unzip) [] = [], fst is safe.
 |-}
--- getNonInductiveBinders :: [parallelisable data type instances] -> Constructor name from pattern -> [binders from pattern] -> [non-inductive binders from pattern]
-getNonInductiveBinders :: [DataType] -> ConName -> [FreeVar] -> [FreeVar]
-getNonInductiveBinders gamma c [] = []
-getNonInductiveBinders gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma --to get the list of type components for this constructor
-                                         pairs = zip fvs tcomps -- pairs :: [(FreeVar, TypeComp)]
-                                     in (fst . unzip) (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
---                                         nonInductiveBinders = (fst . unzip) (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
---                                     in nonInductiveBinders
-
-getTypeComponents :: ConName -> DataType -> [TypeComp]
-getTypeComponents c (DataType tname tvars tcontcomps) = (snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
-
 getNonInductiveBindersTypes :: [DataType] -> ConName -> [FreeVar] -> ([FreeVar], [TypeComp])
 getNonInductiveBindersTypes gamma c [] = ([], [])
 getNonInductiveBindersTypes gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma
                                               pairs = zip fvs tcomps
                                           in unzip (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
+
+getTypeComponents :: ConName -> DataType -> [TypeComp]
+getTypeComponents c (DataType tname tvars tcontcomps) = (snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
