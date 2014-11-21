@@ -194,7 +194,7 @@ shift i d (DLambda fv dt) = DLambda fv (shift i (d+1) dt)
 shift i d (DFunApp f dts) = DFunApp f (map (shift i d) dts)
 shift i d (DLet fv dt0 dt1) = DLet fv (shift i d dt0) (shift i (d+1) dt1)
 shift i d (DCase (fv, dts) bs) = let (DFreeVarApp fv' dts') = shift i d (DFreeVarApp fv dts)
-                                     bs' = map (\(c, fvs, dt) -> (c, fvs, shift i (d+length fvs) dt)) bs
+                                     bs' = map (\(c, fvs, dt) -> (c, fvs, shift i (d+(length fvs)) dt)) bs
                                  in (DCase (fv', dts') bs')
 shift i d (DWhere f1 dts (f2, fvs, dt)) = let (DFunApp f1' dts') = shift i d (DFunApp f1 dts)
                                           in (DWhere f1' dts' (f2, fvs, shift i (d+(length fvs)) dt)) -- TBD: verify (d +(length fvs))
@@ -207,14 +207,21 @@ abstract :: FreeVar -> DTerm -> DTerm
 abstract fv dt = abstract' 0 fv dt
 
 abstract' :: Int -> FreeVar -> DTerm -> DTerm
-abstract' i fv dt@(DFreeVarApp fv1 dts) = dt
-abstract' i fv dt@(DBoundVarApp j dts) = dt
-abstract' i fv dt@(DConApp c dts) = dt
-abstract' i fv dt@(DLambda fv1 dt1) = dt
-abstract' i fv dt@(DFunApp f dts) = dt
-abstract' i fv dt@(DLet fv1 dt1 dt2) = dt
-abstract' i fv dt@(DCase csel bs) = dt
-abstract' i fv dt@(DWhere f1 dts (f2, fvs, dt2)) = dt
+abstract' i fv (DFreeVarApp fv1 dts) = if (fv == fv1)
+                                       then DBoundVarApp i (map (abstract' i fv) dts) -- TBD: verify abstract' i
+                                       else DFreeVarApp fv1 (map (abstract' i fv) dts) -- TBD: verify abstract' i
+abstract' i fv (DBoundVarApp j dts) = if (j >= i)
+                                      then DBoundVarApp (j+1) (map (abstract' i fv) dts) -- TBD: verify abstract' i
+                                      else DBoundVarApp j (map (abstract' i fv) dts) -- TBD: verify abstract' i
+abstract' i fv (DConApp c dts) = DConApp c (map (abstract' i fv) dts)
+abstract' i fv (DLambda fv1 dt) = DLambda fv1 (abstract' (i+1) fv dt)
+abstract' i fv (DFunApp f dts) = DFunApp f (map (abstract' i fv) dts)
+abstract' i fv (DLet fv1 dt0 dt1) = DLet fv1 (abstract' i fv dt0) (abstract' (i+1) fv dt1)
+abstract' i fv (DCase (fv1, dts) bs) = let (DFreeVarApp fv1' dts') = abstract' i fv (DFreeVarApp fv1 dts)
+                                           bs' = map (\(c, fvs, dt) -> (c, fvs, abstract' (i+(length fvs)) fv dt)) bs
+                                       in (DCase (fv1', dts') bs')
+abstract' i fv (DWhere f1 dts (f2, fvs, dt)) = let (DFunApp f1' dts') = abstract' i fv (DFunApp f1 dts)
+                                               in (DWhere f1' dts' (f2, fvs, abstract' (i+(length fvs)) fv dt))
 
 
 {-|
