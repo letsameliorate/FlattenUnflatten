@@ -41,91 +41,95 @@ instance Eq DataType where
 {-|
     Generates the definition for flatten and the new constructors for the Flat Data Type.
 |-}
-generateFlatten :: [DataType] -> DTerm -> ([ConName], DTerm)
-generateFlatten gamma dt = ruleA1 gamma [] [] [] dt
+generateFlatten :: [DataType] -> DTerm -> ([(ConName, [TypeComp])], DTerm)
+generateFlatten gamma dt = ruleA1 gamma ([], []) [] [] dt
 
 
 {-|
     Definition for transformation rule A1.
 |-}
 -- ruleA1 :: [Parallelisable Data Types] -> [Non-inductive Components] -> [New Flat Constructors] -> [Free Variables] -> Term to Transform -> ([New Flat Constructors], Flat Term)
-ruleA1 :: [DataType] -> [FreeVar] -> [ConName] -> [FreeVar] -> DTerm -> ([ConName], DTerm)
-ruleA1 gamma phi cs fvs (DFreeVarApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                               in applyRuleA2ForArguments gamma cs' fvs (DConApp (head cs') (toDFreeVarApps phi)) dts
+ruleA1 :: [DataType] -> ([FreeVar], [TypeComp]) -> [(ConName, [TypeComp])] -> [FreeVar] -> DTerm -> ([(ConName, [TypeComp])], DTerm)
+ruleA1 gamma (phi, tcomps) ctcomps fvs (DFreeVarApp fv dts) = let c' = newFlatConName (fst (unzip ctcomps))
+                                                                  ctcomps' = (c', tcomps) : ctcomps
+                                                              in applyRuleA2ForArguments gamma ctcomps' fvs (DConApp c' (toDFreeVarApps phi)) dts
 
-ruleA1 gamma phi cs fvs (DBoundVarApp i dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                               in applyRuleA2ForArguments gamma cs' fvs (DConApp (head cs') (toDFreeVarApps phi)) dts
+ruleA1 gamma (phi, tcomps) ctcomps fvs (DBoundVarApp fv dts) = let c' = newFlatConName (fst (unzip ctcomps))
+                                                                   ctcomps' = (c', tcomps) : ctcomps
+                                                               in applyRuleA2ForArguments gamma ctcomps' fvs (DConApp c' (toDFreeVarApps phi)) dts
 
-ruleA1 gamma phi cs fvs (DConApp fv dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                           in applyRuleA2ForArguments gamma cs' fvs (DConApp (head cs') (toDFreeVarApps phi)) dts
+ruleA1 gamma (phi, tcomps) ctcomps fvs (DConApp fv dts) = let c' = newFlatConName (fst (unzip ctcomps))
+                                                              ctcomps' = (c', tcomps) : ctcomps
+                                                          in applyRuleA2ForArguments gamma ctcomps' fvs (DConApp c' (toDFreeVarApps phi)) dts
 
-ruleA1 gamma phi cs fvs (DLambda fv dt) = let fv' = rename fvs fv
-                                              (cs', dt') = ruleA1 gamma phi cs (fv':fvs) (subst (DFreeVarApp fv []) dt)
-                                          in (cs', DLambda fv (abstract fv' dt'))
+ruleA1 gamma (phi, tcomps) ctcomps fvs (DLambda fv dt) = let fv' = rename fvs fv
+                                                             (ctcomps', dt') = ruleA1 gamma (phi, tcomps) ctcomps (fv':fvs) (subst (DFreeVarApp fv []) dt)
+                                                         in (ctcomps', DLambda fv (abstract fv' dt'))
 
-ruleA1 gamma phi cs fvs (DFunApp f dts) = let cs' = addFlatConName cs -- create a new constructor for flat data type at head of cs'
-                                          in (cs', DFunApp "(++)" [(DConApp (head cs') (toDFreeVarApps phi)) , (DFunApp ("flatten_" ++ f) (toDFreeVarApps (concatMap free dts)))])
+ruleA1 gamma (phi, tcomps) ctcomps fvs (DFunApp f dts) = let c' = newFlatConName (fst (unzip ctcomps))
+                                                             ctcomps' = (c', tcomps) : ctcomps
+                                                         in (ctcomps', DFunApp "(++)" [(DConApp c' (toDFreeVarApps phi)), (DFunApp ("flatten_" ++ f) (toDFreeVarApps (concatMap free dts)))])
 
-ruleA1 gamma phi cs fvs (DLet fv dt0 dt1) = ruleA1 gamma phi cs fvs (subst dt0 dt1)
+ruleA1 gamma (phi, tcomps) ctcomps fvs (DLet fv dt0 dt1) = ruleA1 gamma (phi, tcomps) ctcomps fvs (subst dt0 dt1)
 
-ruleA1 gamma phi cs fvs (DCase csel bs) = let (cs', bs') = applyRuleA1ForBranches gamma phi cs fvs bs []
-                                          in (cs', (DCase csel bs'))
+ruleA1 gamma (phi, tcomps) ctcomps fvs (DCase csel bs) = let (ctcomps', bs') = applyRuleA1ForBranches gamma (phi, tcomps) ctcomps fvs bs []
+                                                         in (ctcomps', (DCase csel bs'))
 
-ruleA1 gamma phi cs fvs1 (DWhere f1 dts (f2, fvs2, dt)) = let fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv':fvs) fvs1 fvs2
-                                                              fvs2' = take (length fvs2) fvs1'
-                                                              (cs', dt') = ruleA1 gamma phi cs fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2')
-                                                              dt'' = foldl (\dt fv -> abstract fv dt) dt' fvs2'
-                                                          in (cs', (DWhere ("flatten_" ++ f1) dts (("flatten_" ++ f2), fvs2, dt'')))
+ruleA1 gamma (phi, tcomps) ctcomps fvs1 (DWhere f1 dts (f2, fvs2, dt)) = let fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv':fvs) fvs1 fvs2
+                                                                             fvs2' = take (length fvs2) fvs1'
+                                                                             (ctcomps', dt') = ruleA1 gamma ([], []) ctcomps fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2')
+                                                                             dt'' = foldl (\dt fv -> abstract fv dt) dt' fvs2'
+                                                                         in (ctcomps', (DWhere ("flatten_" ++ f1) dts (("flatten_" ++ f2), fvs2, dt'')))
 
 
 {-|
     Definition for transformation rule A2.
 |-}
-ruleA2 :: [DataType] -> [ConName] -> [FreeVar] -> DTerm -> ([ConName], DTerm)
-ruleA2 gamma cs fvs (DFreeVarApp fv dts) = applyRuleA2ForArguments gamma cs fvs (DConApp "[]" []) dts
-ruleA2 gamma cs fvs (DBoundVarApp i dts) = applyRuleA2ForArguments gamma cs fvs (DConApp "[]" []) dts
-ruleA2 gamma cs fvs (DConApp c dts) = applyRuleA2ForArguments gamma cs fvs (DConApp "[]" []) dts
-ruleA2 gamma cs fvs (DLambda fv dt) = let fv' = rename fvs fv
-                                          (cs', dt') = ruleA2 gamma cs (fv' : fvs) (subst (DFreeVarApp fv []) dt)
-                                      in (cs', DLambda fv (abstract fv' dt'))
-ruleA2 gamma cs fvs (DFunApp f dts) = (cs, (DFunApp ("flatten_" ++ f) (toDFreeVarApps (concatMap free dts))))
-ruleA2 gamma cs fvs (DLet fv dt0 dt1) = ruleA2 gamma cs fvs (subst dt0 dt1)
-ruleA2 gamma cs fvs dt = ruleA1 gamma [] cs fvs dt
+ruleA2 :: [DataType] -> [(ConName, [TypeComp])] -> [FreeVar] -> DTerm -> ([(ConName, [TypeComp])], DTerm)
+ruleA2 gamma ctcomps fvs (DFreeVarApp fv dts) = applyRuleA2ForArguments gamma ctcomps fvs (DConApp "[]" []) dts
+ruleA2 gamma ctcomps fvs (DBoundVarApp i dts) = applyRuleA2ForArguments gamma ctcomps fvs (DConApp "[]" []) dts
+ruleA2 gamma ctcomps fvs (DConApp c dts) = applyRuleA2ForArguments gamma ctcomps fvs (DConApp "[]" []) dts
+ruleA2 gamma ctcomps fvs (DLambda fv dt) = let fv' = rename fvs fv
+                                               (ctcomps', dt') = ruleA2 gamma ctcomps (fv' : fvs) (subst (DFreeVarApp fv []) dt)
+                                           in (ctcomps', DLambda fv (abstract fv' dt'))
+ruleA2 gamma ctcomps fvs (DFunApp f dts) = (ctcomps, (DFunApp ("flatten_" ++ f) (toDFreeVarApps (concatMap free dts))))
+ruleA2 gamma ctcomps fvs (DLet fv dt0 dt1) = ruleA2 gamma ctcomps fvs (subst dt0 dt1)
+ruleA2 gamma ctcomps fvs dt = ruleA1 gamma ([], []) ctcomps fvs dt
 
 
 {-|
     Function to sequentally apply function ruleA1.
     Used for the branch expressions in case expressions.
 |-}
-applyRuleA1ForBranches :: [DataType] -> [FreeVar] -> [ConName] -> [FreeVar] -> [Branch] -> [Branch] -> ([ConName], [Branch])
-applyRuleA1ForBranches gamma phi cs fvs [] bs' = (cs, bs')
-applyRuleA1ForBranches gamma phi cs fvs1 ((c, fvs2, dt) : bs) bs' = let phi' = phi ++ (getNonInductiveBinders gamma c fvs2)
-                                                                        fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv':fvs) fvs1 fvs2
-                                                                        fvs2' = take (length fvs2) fvs1'
-                                                                        (cs', dt') = ruleA1 gamma phi' cs fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2')
-                                                                        dt'' = foldl (\dt fv -> abstract fv dt) dt' fvs2'
-                                                                    in applyRuleA1ForBranches gamma phi cs' fvs1 bs (bs' ++ [(c, fvs2, dt'')])
+applyRuleA1ForBranches :: [DataType] -> ([FreeVar], [TypeComp]) -> [(ConName, [TypeComp])] -> [FreeVar] -> [Branch] -> [Branch] -> ([(ConName, [TypeComp])], [Branch])
+applyRuleA1ForBranches gamma (phi, tcomps) ctcomps fvs [] bs' = (ctcomps, bs')
+applyRuleA1ForBranches gamma (phi, tcomps) ctcomps fvs1 ((c, fvs2, dt) : bs) bs' = let (phi', tcomps') = getNonInductiveBindersTypes gamma c fvs2 -- phi' is subset of fvs2. tcomps' are types of phi'. non-inductive binders & types for this branch.
+                                                                                       fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv':fvs) fvs1 fvs2 -- add new free variables for fvs2 at head of fvs1
+                                                                                       fvs2' = take (length fvs2) fvs1' -- take the new free variables created for fvs2
+                                                                                       (ctcomps', dt') = ruleA1 gamma (phi ++ phi', tcomps ++ tcomps') ctcomps fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2') -- substitute fvs2' in dt and transform
+                                                                                       dt'' = foldl (\dt fv -> abstract fv dt) dt' fvs2'
+                                                                                   in applyRuleA1ForBranches gamma (phi, tcomps) ctcomps' fvs1 bs (bs' ++ [(c, fvs2, dt'')])
 
 
 {-|
     Function to sequentially apply function ruleA2.
     Used for the arguments of variable and constructor applications.
 |-}
-applyRuleA2ForArguments :: [DataType] -> [ConName] -> [FreeVar] -> DTerm -> [DTerm] -> ([ConName], DTerm)
-applyRuleA2ForArguments gamma cs fvs ft [] = (cs, ft)
-applyRuleA2ForArguments gamma cs fvs ft (dt:dts) = let (cs', dt') = ruleA2 gamma cs fvs dt
-                                                   in applyRuleA2ForArguments gamma cs' fvs (DFunApp "(++)" [ft, dt']) dts
+applyRuleA2ForArguments :: [DataType] -> [(ConName, [TypeComp])] -> [FreeVar] -> DTerm -> [DTerm] -> ([(ConName, [TypeComp])], DTerm)
+applyRuleA2ForArguments gamma ctcomps fvs ft [] = (ctcomps, ft)
+applyRuleA2ForArguments gamma ctcomps fvs ft (dt:dts) = let (ctcomps', dt') = ruleA2 gamma ctcomps fvs dt
+                                                        in applyRuleA2ForArguments gamma ctcomps' fvs (DFunApp "(++)" [ft, dt']) dts
 
 
 {-|
-    Function to add a new constructor name for the flat data type.
+    Function to create a new constructor name for the flat data type.
 |-}
-addFlatConName :: [ConName] -> [ConName]
-addFlatConName [] = ["flatCon"]
-addFlatConName cs = addFlatConName' cs (head cs)
-addFlatConName' cs c = if c `elem` cs
-                       then addFlatConName' cs (c ++ "'")
-                       else (c : cs)
+newFlatConName :: [ConName] -> ConName
+newFlatConName [] = "flatCon"
+newFlatConName cs = newFlatConName' cs (head cs)
+newFlatConName' cs c = if c `elem` cs
+                       then newFlatConName' cs (c ++ "'")
+                       else c
 
 
 {-|
