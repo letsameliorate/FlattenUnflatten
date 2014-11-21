@@ -168,7 +168,7 @@ subst' i dt0 (DBoundVarApp j dts) = if (j < i)
                                     then DBoundVarApp j (map (subst' i dt0) dts)
                                     else if (j == i)
                                          then shift i 0 dt0 -- TBD: what is the DTerm to be constructed here ??
-                                         else DBoundVarApp (j-1) (map (subst' (i-1) dt0) dts) -- TBD: (i-1) or (j-1) ??
+                                         else DBoundVarApp (j-1) (map (subst' (i-1) dt0) dts) -- TBD: subst' (i-1) or subst' (j-1) ??
 subst' i dt0 (DConApp c dts) = DConApp c (map (subst' i dt0) dts)
 subst' i dt0 (DLambda fv dt) = DLambda fv (subst' (i+1) dt0 dt)
 subst' i dt0 (DFunApp f dts) = DFunApp f (map (subst' i dt0) dts)
@@ -177,7 +177,7 @@ subst' i dt0 (DCase (fv, dts) bs) = let (DFreeVarApp fv' dts') = subst' i dt0 (D
                                         bs' = map (\(c, fvs, dt) -> (c, fvs, subst' (i+(length fvs)) dt0 dt)) bs
                                     in (DCase (fv', dts') bs')
 subst' i dt0 (DWhere f1 dts (f2, fvs, dt)) = let (DFunApp f1' dts') = subst' i dt0 (DFunApp f1 dts)
-                                             in (DWhere f1' dts' (f2, fvs, subst' (i+(length fvs)) dt0 dt)) -- TBD: verify (d+(length fvs))
+                                             in (DWhere f1' dts' (f2, fvs, subst' (i+(length fvs)) dt0 dt)) -- TBD: verify (i+(length fvs))
 
 
 {-|
