@@ -39,7 +39,7 @@ instance Eq DataType where
 
 
 {-|
-    Generates the definition for flatten and the new constructors for the Flat Data Type.
+    Generates the definition for flatten and the new (constructor, typecomponents) pairs for the Flat Data Type.
 |-}
 generateFlatten :: [DataType] -> DTerm -> ([(ConName, [TypeComp])], DTerm)
 generateFlatten gamma dt = ruleA1 gamma ([], []) [] [] dt
