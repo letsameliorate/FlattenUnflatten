@@ -47,8 +47,14 @@ generateFlatten gamma dt = ruleA1 gamma ([], []) [] [] dt
 
 {-|
     Definition for transformation rule A1.
+
+-- ruleA1 :: [Parallelisable Data Types] 
+--        -> ([Non-inductive Components], [Types for non-inductive components]) 
+--        -> [(New Flat Constructor Name, [Type Components])] 
+--        -> [Free Variables] 
+--        -> Term to Transform 
+--        -> ([(New Flat Constructor Name, [Type Components])], Flat Term)
 |-}
--- ruleA1 :: [Parallelisable Data Types] -> [Non-inductive Components] -> [New Flat Constructors] -> [Free Variables] -> Term to Transform -> ([New Flat Constructors], Flat Term)
 ruleA1 :: [DataType] -> ([FreeVar], [TypeComp]) -> [(ConName, [TypeComp])] -> [FreeVar] -> DTerm -> ([(ConName, [TypeComp])], DTerm)
 ruleA1 gamma (phi, tcomps) ctcomps fvs (DFreeVarApp fv dts) = let c' = newFlatConName (fst (unzip ctcomps))
                                                                   ctcomps' = (c', tcomps) : ctcomps
@@ -77,7 +83,7 @@ ruleA1 gamma (phi, tcomps) ctcomps fvs (DCase csel bs) = let (ctcomps', bs') = a
 
 ruleA1 gamma (phi, tcomps) ctcomps fvs1 (DWhere f1 dts (f2, fvs2, dt)) = let fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv':fvs) fvs1 fvs2
                                                                              fvs2' = take (length fvs2) fvs1'
-                                                                             (ctcomps', dt') = ruleA1 gamma ([], []) ctcomps fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2')
+                                                                             (ctcomps', dt') = ruleA1 gamma ([], []) ctcomps fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2') -- TBD: verify (phi, tcomps) = ([], [])
                                                                              dt'' = foldl (\dt fv -> abstract fv dt) dt' fvs2'
                                                                          in (ctcomps', (DWhere ("flatten_" ++ f1) dts (("flatten_" ++ f2), fvs2, dt'')))
 
