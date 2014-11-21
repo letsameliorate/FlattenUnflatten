@@ -244,3 +244,9 @@ getNonInductiveBinders gamma c fvs = let tcomps = concatMap (getTypeComponents c
 
 getTypeComponents :: ConName -> DataType -> [TypeComp]
 getTypeComponents c (DataType tname tvars tcontcomps) = (snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
+
+getNonInductiveBindersTypes :: [DataType] -> ConName -> [FreeVar] -> ([FreeVar], [TypeComp])
+getNonInductiveBindersTypes gamma c [] = ([], [])
+getNonInductiveBindersTypes gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma
+                                              pairs = zip fvs tcomps
+                                          in unzip (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
