@@ -251,6 +251,7 @@ free' xs (DWhere f1 dts (f2, fvs, dt2)) = free' (free' xs (DFunApp f1 dts)) dt2
 getNonInductiveBindersTypes :: [DataType] -> ConName -> [FreeVar] -> ([FreeVar], [TypeComp])
 getNonInductiveBindersTypes gamma c [] = ([], [])
 getNonInductiveBindersTypes gamma c fvs = let tcomps = concatMap (getTypeComponents c) gamma
+                                              -- tcomps = concatMap (\(DataType tname tvars tcontcomps) -> ((snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps))) gamma
                                               pairs = zip fvs tcomps
                                           in unzip (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
 
