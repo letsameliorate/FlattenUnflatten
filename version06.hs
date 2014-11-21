@@ -103,7 +103,7 @@ ruleA2 gamma ctcomps fvs dt = ruleA1 gamma ([], []) ctcomps fvs dt
 |-}
 applyRuleA1ForBranches :: [DataType] -> ([FreeVar], [TypeComp]) -> [(ConName, [TypeComp])] -> [FreeVar] -> [Branch] -> [Branch] -> ([(ConName, [TypeComp])], [Branch])
 applyRuleA1ForBranches gamma (phi, tcomps) ctcomps fvs [] bs' = (ctcomps, bs')
-applyRuleA1ForBranches gamma (phi, tcomps) ctcomps fvs1 ((c, fvs2, dt) : bs) bs' = let (phi', tcomps') = getNonInductiveBindersTypes gamma c fvs2 -- phi' is subset of fvs2. tcomps' are types of phi'. non-inductive binders & types for this branch.
+applyRuleA1ForBranches gamma (phi, tcomps) ctcomps fvs1 ((c, fvs2, dt) : bs) bs' = let (phi', tcomps') = getNonInductiveBindersTypes gamma c fvs2 -- phi' is non-inductives of binders fvs2. tcomps' are types of phi'. for this branch.
                                                                                        fvs1' = foldr (\fv fvs -> let fv' = rename fvs fv in fv':fvs) fvs1 fvs2 -- add new free variables for fvs2 at head of fvs1
                                                                                        fvs2' = take (length fvs2) fvs1' -- take the new free variables created for fvs2
                                                                                        (ctcomps', dt') = ruleA1 gamma (phi ++ phi', tcomps ++ tcomps') ctcomps fvs1' (foldr (\fv dt -> subst (DFreeVarApp fv []) dt) dt fvs2') -- substitute fvs2' in dt and transform
