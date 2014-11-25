@@ -48,11 +48,11 @@ generateFlatten gamma dt = ruleA1 gamma ([], []) [] [] dt
 {-|
     Definition for transformation rule A1.
 
--- ruleA1 :: [Parallelisable Data Types] 
---        -> ([Non-inductive Components], [Types for non-inductive components]) 
---        -> [(New Flat Constructor Name, [Type Components])] 
---        -> [Free Variables] 
---        -> Term to Transform 
+-- ruleA1 :: [Parallelisable Data Types]
+--        -> ([Non-inductive Components], [Types for non-inductive components])
+--        -> [(New Flat Constructor Name, [Type Components])]
+--        -> [Free Variables]
+--        -> Term to Transform
 --        -> ([(New Flat Constructor Name, [Type Components])], Flat Term)
 |-}
 ruleA1 :: [DataType] -> ([FreeVar], [TypeComp]) -> [(ConName, [TypeComp])] -> [FreeVar] -> DTerm -> ([(ConName, [TypeComp])], DTerm)
