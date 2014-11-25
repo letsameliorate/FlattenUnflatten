@@ -157,6 +157,24 @@ rename fvs fv = if (fv `elem` fvs)
 
 
 {-|
+    Function to filter the non-inductive binders from a pattern.
+    Returns ([non-inductive binder], [their type component])
+
+-- getTypeComponents for c can never be [], because fvs for c is not [].
+-- => filter in getTypeComponents is never []. => head is never applied on [].
+|-}
+getNonInductiveBindersTypes :: [DataType] -> ConName -> [FreeVar] -> ([FreeVar], [TypeComp])
+getNonInductiveBindersTypes gamma c [] = ([], [])
+getNonInductiveBindersTypes gamma c fvs = let -- tcomps = concatMap (getTypeComponents c) gamma
+                                              tcomps = concatMap (\(DataType tname tvars tcontcomps) -> ((snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps))) gamma
+                                              pairs = zip fvs tcomps
+                                          in unzip (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
+
+-- getTypeComponents :: ConName -> DataType -> [TypeComp]
+-- getTypeComponents c (DataType tname tvars tcontcomps) = (snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
+
+
+{-|
     TBD: Function to substitute dt0 in dt1.
 |-}
 subst :: DTerm -> DTerm -> DTerm
@@ -239,21 +257,3 @@ free' xs (DFunApp f dts) = foldr (\dt xs -> free' xs dt) xs dts
 free' xs (DLet fv dt1 dt2) = free' (free' xs dt1) dt2
 free' xs (DCase (fv, dts) bs) = foldr (\(c, fvs, dt) xs -> free' xs dt) (free' xs (DFreeVarApp fv dts)) bs
 free' xs (DWhere f1 dts (f2, fvs, dt2)) = free' (free' xs (DFunApp f1 dts)) dt2
-
-
-{-|
-    Function to filter the non-inductive binders from a pattern.
-    Returns ([non-inductive binder], [their type component])
-
--- getTypeComponents for c can never be [], because fvs for c is not [].
--- => filter in getTypeComponents is never []. => head is never applied on [].
-|-}
-getNonInductiveBindersTypes :: [DataType] -> ConName -> [FreeVar] -> ([FreeVar], [TypeComp])
-getNonInductiveBindersTypes gamma c [] = ([], [])
-getNonInductiveBindersTypes gamma c fvs = let -- tcomps = concatMap (getTypeComponents c) gamma
-                                              tcomps = concatMap (\(DataType tname tvars tcontcomps) -> ((snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps))) gamma
-                                              pairs = zip fvs tcomps
-                                          in unzip (filter (\(fv, tcomp) -> tcomp `notElem` gamma) pairs)
-
--- getTypeComponents :: ConName -> DataType -> [TypeComp]
--- getTypeComponents c (DataType tname tvars tcontcomps) = (snd . head) (filter (\(tcon, tcomps) -> tcon == c) tcontcomps)
